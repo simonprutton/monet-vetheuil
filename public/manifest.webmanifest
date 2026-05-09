@@ -1,0 +1,23 @@
+{
+  "name": "Monet at Vétheuil",
+  "short_name": "Monet",
+  "description": "A catalogue of Claude Monet's paintings made at Vétheuil, 1878–1881 and the 1901 Lavacourt series.",
+  "display": "standalone",
+  "start_url": "/",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

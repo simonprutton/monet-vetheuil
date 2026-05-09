@@ -1,0 +1,252 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export async function getStaticPaths() {
+  const paintings = await getCollection('paintings');
+  return paintings.map((p) => ({
+    params: { id: p.data.id },
+    props: { painting: p },
+  }));
+}
+
+interface Props {
+  painting: CollectionEntry<'paintings'>;
+}
+
+const { painting } = Astro.props;
+const { Content } = await render(painting);
+const { data } = painting;
+
+function pswpDims(p: CollectionEntry<'paintings'>): { w: number; h: number } {
+  if (p.data.dimensionsCm) {
+    const { height, width } = p.data.dimensionsCm;
+    const maxW = 1200;
+    return { w: maxW, h: Math.round((maxW * height) / width) };
+  }
+  return { w: 1200, h: 900 };
+}
+
+const dims = pswpDims(painting);
+
+const dimensionStr = data.dimensionsCm
+  ? `${data.dimensionsCm.height} × ${data.dimensionsCm.width} cm`
+  : undefined;
+---
+
+<BaseLayout title={data.title} description={`${data.titleEn}, ${data.year}. ${data.currentLocation}.`}>
+  <header class="page-header">
+    <a href="/" class="back-link">← Gallery</a>
+  </header>
+
+  <div class="hero-wrap">
+    <div id="hero-gallery">
+      <a
+        id="hero-link"
+        class="hero-link"
+        href={data.imageUrl}
+        data-pswp-width={dims.w}
+        data-pswp-height={dims.h}
+        data-caption={`${data.title} · ${data.year}`}
+      >
+        <img
+          src={data.imageUrl}
+          alt={data.titleEn}
+          width={dims.w}
+          height={dims.h}
+          decoding="async"
+        />
+      </a>
+    </div>
+  </div>
+
+  <div class="painting-meta">
+    <h1 class="painting-title" lang="fr">{data.title}</h1>
+    <p class="painting-title-en">{data.titleEn}</p>
+
+    <dl class="meta-table">
+      <dt class="meta-label">Year</dt>
+      <dd>{data.year}</dd>
+
+      {
+        dimensionStr && (
+          <>
+            <dt class="meta-label">Dimensions</dt>
+            <dd>{dimensionStr}</dd>
+          </>
+        )
+      }
+
+      <dt class="meta-label">Collection</dt>
+      <dd>
+        {
+          data.museumUrl ? (
+            <a href={data.museumUrl} target="_blank" rel="noopener noreferrer">
+              {data.currentLocation}
+            </a>
+          ) : (
+            data.currentLocation
+          )
+        }
+      </dd>
+
+      <dt class="meta-label">Catalogue</dt>
+      <dd>{data.wildensteinNumber}</dd>
+
+      <dt class="meta-label">Period</dt>
+      <dd>{data.period === '1878-1881' ? '1878–1881' : '1901 Lavacourt series'}</dd>
+    </dl>
+
+    <div class="commentary">
+      <Content />
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <p>
+      <a href="/">← Back to gallery</a>
+    </p>
+  </footer>
+</BaseLayout>
+
+<style>
+  .page-header {
+    padding: 1.25rem var(--pad);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .back-link {
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    transition: color 0.15s;
+  }
+
+  .back-link:hover {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .hero-wrap {
+    padding: 2.5rem var(--pad) 0;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .hero-link {
+    display: block;
+    cursor: zoom-in;
+  }
+
+  .hero-link img {
+    width: 100%;
+    height: auto;
+  }
+
+  .painting-meta {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2.5rem var(--pad) 1rem;
+  }
+
+  .painting-title {
+    font-family: var(--font-serif);
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    font-weight: 400;
+    line-height: 1.2;
+    margin-bottom: 0.3rem;
+  }
+
+  .painting-title-en {
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    font-style: italic;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .meta-table {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.55rem 2rem;
+    font-size: 0.9rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .meta-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+    padding-top: 0.1em;
+  }
+
+  .commentary {
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  .commentary :global(p + p) {
+    margin-top: 1em;
+  }
+</style>
+
+<script>
+  import 'photoswipe/style.css';
+  import PhotoSwipeLightbox from 'photoswipe/lightbox';
+
+  const lightbox = new PhotoSwipeLightbox({
+    gallery: '#hero-gallery',
+    children: 'a.hero-link',
+    pswpModule: () => import('photoswipe'),
+    bgOpacity: 0.97,
+    zoom: true,
+    close: true,
+    counter: false,
+    arrowPrev: false,
+    arrowNext: false,
+  });
+
+  // Caption overlay
+  lightbox.on('uiRegister', function () {
+    lightbox.pswp?.ui.registerElement({
+      name: 'caption',
+      order: 9,
+      isButton: false,
+      appendTo: 'root',
+      onInit(el, pswp) {
+        el.classList.add('pswp-caption');
+        pswp.on('change', () => {
+          const anchor = pswp.currSlide?.data?.element as HTMLElement | undefined;
+          el.textContent = anchor?.dataset?.caption ?? '';
+        });
+      },
+    });
+  });
+
+  // Fullscreen button
+  lightbox.on('uiRegister', function () {
+    lightbox.pswp?.ui.registerElement({
+      name: 'fullscreen-button',
+      order: 11,
+      isButton: true,
+      title: 'Toggle fullscreen',
+      html: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h5v2H5v3H3V3zm9 0h5v5h-2V5h-3V3zM3 12h2v3h3v2H3v-5zm12 3h-3v2h5v-5h-2v3z" fill="currentColor"/></svg>',
+      onClick() {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        } else {
+          document.documentElement.requestFullscreen?.().catch(() => {});
+        }
+      },
+    });
+  });
+
+  lightbox.init();
+</script>
