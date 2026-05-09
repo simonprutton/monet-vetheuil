@@ -1,0 +1,314 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const paintings = await getCollection('paintings');
+paintings.sort((a, b) => a.data.year - b.data.year || a.data.id.localeCompare(b.data.id));
+
+const allSubjects = [
+  ...new Set(paintings.flatMap((p) => p.data.subjects)),
+].sort() as string[];
+
+const subjectLabels: Record<string, string> = {
+  church: 'Church',
+  garden: 'Garden',
+  island: 'Island',
+  lavacourt: 'Lavacourt',
+  road: 'Road',
+  seine: 'Seine',
+  snow: 'Snow',
+  'poppy-field': 'Poppy Fields',
+};
+
+function pswpDims(p: (typeof paintings)[0]): { w: number; h: number } {
+  if (p.data.dimensionsCm) {
+    const { height, width } = p.data.dimensionsCm;
+    const maxW = 1200;
+    return { w: maxW, h: Math.round((maxW * height) / width) };
+  }
+  return { w: 1200, h: 900 };
+}
+---
+
+<BaseLayout title="Gallery">
+  <header class="site-header">
+    <a href="/" class="site-title"><h1>Monet at Vétheuil</h1></a>
+    <p class="site-subtitle">Paintings from 1878–1881 and the 1901 Lavacourt Series</p>
+  </header>
+
+  <div class="filters" role="toolbar" aria-label="Filter by period or subject">
+    <button class="chip active" data-filter="all">All</button>
+    <button class="chip" data-filter="period:1878-1881">1878–81</button>
+    <button class="chip" data-filter="period:1901-lavacourt">1901 Lavacourt</button>
+    {
+      allSubjects.map((s) => (
+        <button class="chip" data-filter={`subject:${s}`}>
+          {subjectLabels[s] ?? s}
+        </button>
+      ))
+    }
+  </div>
+
+  <main>
+    <div class="gallery" id="gallery">
+      {
+        paintings.map((p) => {
+          const dims = pswpDims(p);
+          return (
+            <article
+              class="tile"
+              data-period={p.data.period}
+              data-subjects={p.data.subjects.join(',')}
+            >
+              <a
+                class="tile-img"
+                href={p.data.imageUrl}
+                data-pswp-width={dims.w}
+                data-pswp-height={dims.h}
+                data-caption={`${p.data.title} · ${p.data.year}`}
+              >
+                <img
+                  src={p.data.imageThumbUrl}
+                  alt={p.data.titleEn}
+                  loading="lazy"
+                  decoding="async"
+                  width={dims.w}
+                  height={dims.h}
+                />
+              </a>
+              <div class="tile-meta">
+                <div class="tile-info">
+                  <span class="tile-title" lang="fr">{p.data.title}</span>
+                  <span class="tile-year">{p.data.year}</span>
+                </div>
+                <a
+                  href={`/painting/${p.data.id}`}
+                  class="details-link"
+                  aria-label={`Details for ${p.data.titleEn}`}
+                >
+                  Details →
+                </a>
+              </div>
+            </article>
+          );
+        })
+      }
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>A personal catalogue · Vétheuil, Seine-et-Oise</p>
+  </footer>
+</BaseLayout>
+
+<style>
+  /* ── Filter chips ── */
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 1.75rem var(--pad) 0;
+  }
+
+  .chip {
+    padding: 0.3rem 0.9rem;
+    border: 1px solid #3a3a3a;
+    border-radius: 2rem;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition:
+      background 0.18s,
+      border-color 0.18s,
+      color 0.18s;
+  }
+
+  .chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0a0a0a;
+  }
+
+  /* ── Gallery grid ── */
+  main {
+    padding: 1.75rem var(--pad);
+  }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 600px) {
+    .gallery {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 960px) {
+    .gallery {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  /* ── Tile ── */
+  .tile {
+    background: var(--bg-raised);
+    overflow: hidden;
+    transition: opacity 0.2s;
+  }
+
+  .tile[hidden] {
+    display: none !important;
+  }
+
+  .tile-img {
+    display: block;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    cursor: zoom-in;
+  }
+
+  .tile-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.45s ease;
+  }
+
+  .tile-img:hover img {
+    transform: scale(1.04);
+  }
+
+  .tile-meta {
+    padding: 0.8rem 0.9rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .tile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .tile-title {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1.3;
+    color: var(--text);
+  }
+
+  .tile-year {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+  }
+
+  .details-link {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+  }
+
+  .details-link:hover {
+    text-decoration: underline;
+  }
+</style>
+
+<script>
+  import 'photoswipe/style.css';
+  import PhotoSwipeLightbox from 'photoswipe/lightbox';
+
+  const lightbox = new PhotoSwipeLightbox({
+    gallery: '#gallery',
+    children: 'a.tile-img',
+    pswpModule: () => import('photoswipe'),
+    bgOpacity: 0.96,
+    zoom: true,
+    close: true,
+    counter: true,
+    arrowPrev: true,
+    arrowNext: true,
+  });
+
+  // Caption overlay
+  lightbox.on('uiRegister', function () {
+    lightbox.pswp?.ui.registerElement({
+      name: 'caption',
+      order: 9,
+      isButton: false,
+      appendTo: 'root',
+      onInit(el, pswp) {
+        el.classList.add('pswp-caption');
+        pswp.on('change', () => {
+          const anchor = pswp.currSlide?.data?.element as HTMLElement | undefined;
+          el.textContent = anchor?.dataset?.caption ?? '';
+        });
+      },
+    });
+  });
+
+  // Fullscreen button
+  lightbox.on('uiRegister', function () {
+    lightbox.pswp?.ui.registerElement({
+      name: 'fullscreen-button',
+      order: 11,
+      isButton: true,
+      title: 'Toggle fullscreen',
+      html: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h5v2H5v3H3V3zm9 0h5v5h-2V5h-3V3zM3 12h2v3h3v2H3v-5zm12 3h-3v2h5v-5h-2v3z" fill="currentColor"/></svg>',
+      onClick() {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        } else {
+          document.documentElement.requestFullscreen?.().catch(() => {});
+        }
+      },
+    });
+  });
+
+  lightbox.init();
+
+  // ── Filter chips ──
+  const chips = document.querySelectorAll<HTMLButtonElement>('.chip');
+  const tiles = document.querySelectorAll<HTMLElement>('.tile');
+
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      chips.forEach((c) => c.classList.remove('active'));
+      chip.classList.add('active');
+      applyFilter(chip.dataset.filter ?? 'all');
+    });
+  });
+
+  function applyFilter(filter: string) {
+    tiles.forEach((tile) => {
+      if (filter === 'all') {
+        tile.hidden = false;
+        return;
+      }
+      const period = tile.dataset.period ?? '';
+      const subjects = (tile.dataset.subjects ?? '').split(',');
+      if (filter.startsWith('period:')) {
+        tile.hidden = period !== filter.slice(7);
+      } else if (filter.startsWith('subject:')) {
+        tile.hidden = !subjects.includes(filter.slice(8));
+      }
+    });
+  }
+</script>
