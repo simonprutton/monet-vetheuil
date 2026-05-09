@@ -22,10 +22,10 @@ const { data } = painting;
 function pswpDims(p: CollectionEntry<'paintings'>): { w: number; h: number } {
   if (p.data.dimensionsCm) {
     const { height, width } = p.data.dimensionsCm;
-    const maxW = 1200;
+    const maxW = 2400;
     return { w: maxW, h: Math.round((maxW * height) / width) };
   }
-  return { w: 1200, h: 900 };
+  return { w: 2400, h: 1800 };
 }
 
 const dims = pswpDims(painting);
