@@ -235,6 +235,12 @@ function pswpDims(p: (typeof paintings)[0]): { w: number; h: number } {
   import 'photoswipe/style.css';
   import PhotoSwipeLightbox from 'photoswipe/lightbox';
 
+  // Use visualViewport.height when available (stable on iOS Safari — doesn't
+  // change when the address bar collapses). Falls back to window.innerHeight.
+  function stableViewportHeight(): number {
+    return window.visualViewport?.height ?? window.innerHeight;
+  }
+
   const lightbox = new PhotoSwipeLightbox({
     gallery: '#gallery',
     children: 'a.tile-img',
@@ -245,6 +251,12 @@ function pswpDims(p: (typeof paintings)[0]): { w: number; h: number } {
     counter: true,
     arrowPrev: true,
     arrowNext: true,
+    // Give PhotoSwipe the same viewport height the browser is using so its
+    // initial image sizing matches the container from frame 1.
+    getViewportSizeFn: () => ({
+      x: document.documentElement.clientWidth,
+      y: stableViewportHeight(),
+    }),
   });
 
   // Caption overlay

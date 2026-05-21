@@ -201,6 +201,10 @@ const dimensionStr = data.dimensionsCm
   import 'photoswipe/style.css';
   import PhotoSwipeLightbox from 'photoswipe/lightbox';
 
+  function stableViewportHeight(): number {
+    return window.visualViewport?.height ?? window.innerHeight;
+  }
+
   const lightbox = new PhotoSwipeLightbox({
     gallery: '#hero-gallery',
     children: 'a.hero-link',
@@ -211,6 +215,10 @@ const dimensionStr = data.dimensionsCm
     counter: false,
     arrowPrev: false,
     arrowNext: false,
+    getViewportSizeFn: () => ({
+      x: document.documentElement.clientWidth,
+      y: stableViewportHeight(),
+    }),
   });
 
   // Caption overlay

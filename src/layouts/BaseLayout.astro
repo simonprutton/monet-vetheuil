@@ -86,9 +86,14 @@ const {
   }
 
   /* ── PhotoSwipe overrides ── */
+  /*
+   * Do NOT override .pswp height here. PhotoSwipe measures window.innerHeight
+   * at open-time and sizes the image to that value. Setting height: 100dvh
+   * via CSS causes a second layout pass that squashes the already-positioned
+   * image. Let PhotoSwipe own its own container (position:fixed; height:100%).
+   */
   .pswp {
     --pswp-bg: #000;
-    height: 100dvh !important;
   }
 
   /* Caption overlay registered via ui.registerElement */
